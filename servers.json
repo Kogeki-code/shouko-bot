@@ -1,0 +1,11 @@
+{
+    "677230558430101524": {
+        "prefix": ".",
+        "logs": "false",
+        "music": "false",
+        "welcome": "true",
+        "nsfw": "true",
+        "editrole": "admin",
+        "defaultrole": "false"
+    }
+}
