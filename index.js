@@ -3,10 +3,134 @@ const client = new Discord.Client();
 const fs = require('fs');
 var Long = require("long");
 const unirest = require("unirest");
+function roleC(message, role, desc, color) {
+    message.guild.roles.create({
+        data: {
+          name: role,
+          color: color,
+        },
+        reason: desc,
+      })
+        .then(console.log)
+        .catch(console.error);
+}
+
 const {
     prefix, token, gifToken
 }=require('./config.json');
 client.data = require('./servers.json');
+client.xp = require('./xp.json');
+client.mute = require('./mutes.json');
+client.on('message', message => {
+    var msg = message.content.toLowerCase();
+    let _con = client.data[message.guild.id].prefix;
+    var id = message.guild.id;
+    if(msg.startsWith(_con+'mute324224424')) {
+        const args = message.content.slice(_con.length+4).trim().split(/ +/g);
+        if(message.member.hasPermission('KICK_MEMBERS')) {
+            if(args[0]) {
+                if(args[1]) {
+                    if(!message.guild.me.hasPermission('ADMINISTRATOR')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)");
+                    const toKick = message.mentions.members.first() || message.guild.members.get(args[0]);
+                    var user = toKick.id;
+                    if(!toKick) {
+                        return message.channel.send('The mentioned user does not exist');
+                    }
+                    if(message.author.id === toKick.id) {
+                        return message.channel.send('You can not mute yourself');
+                    }
+                    if(toKick.hasPermission('KICK_MEMBERS')) {
+                        return message.channel.send('I am not able to mute this person.');
+                    }
+                    const reason = args.slice(args[0].length);
+                    if(!client.mute[id]) {
+                        client.mute[id] = {
+                        }
+                    }
+                    if(!client.mute[id][user]) {
+                        client.mute[id][user] = {
+                            muted: 'false',
+                            reason: 'none',
+                            by: 'none',
+                            when: 'none'
+                        }
+                    }
+                    if(client.mute[id][user].muted === 'true') {
+                        return message.channel.send('This user is already muted!');
+                    }
+                    client.mute[id][user] = {
+                        muted: 'true',
+                        reason: reason,
+                        by: message.author.tag,
+                        when: message.createdAt.toString()
+                    }
+                    const embed = new Discord.MessageEmbed()
+                    .setTitle(args[0]+ " has been muted!")
+                    .setDescription('Reason: ' + reason)
+                    .setColor('#ff2ec7')
+                    .setFooter('By: ' + message.author.tag);
+                    message.channel.send(embed);
+                    message.delete();
+                    fs.writeFile("./mutes.json", JSON.stringify (client.mute, null, 4), err => {
+                        if(err) throw err;
+                    });
+                } else {
+                    message.channel.send('You need to provide a reason!');
+                }
+            } else {
+                message.channel.send('You need to mention somebody!');
+            }
+        } else {
+            message.channel.send('You do not have the required permission.(KICK_MEMBERS)');
+        }
+    }
+    if(msg.startsWith(_con+'unmute324224424')) {
+        const args = message.content.slice(_con.length+6).trim().split(/ +/g);
+        if(message.member.hasPermission('KICK_MEMBERS')) {
+            if(args[0]) {
+                if(args[1]) {
+                    if(!message.guild.me.hasPermission('ADMINISTRATOR')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)");
+                    const toKick = message.mentions.members.first() || message.guild.members.get(args[0]);
+                    var user = toKick.id;
+                    if(!toKick) {
+                        return message.channel.send('The mentioned user does not exist');
+                    }
+                    const reason = args.slice(args[0].length);
+                    if(!client.mute[id]) {
+                        client.mute[id] = {
+                        }
+                    }
+                    if(client.mute[id][user].muted === 'false' || !client.mute[id][user]) {
+                        return message.channel.send('This user is not muted!');
+                    }
+                    client.mute[id][user] = {
+                        muted: 'false',
+                        reason: reason,
+                        by: message.author.tag,
+                        when: message.createdAt.toString()
+                    }
+                    const embed = new Discord.MessageEmbed()
+                    .setTitle(args[0]+ " has been unmuted!")
+                    .setDescription('Reason: ' + message.content.slice(6+toKick.length).split(" "))
+                    .setColor('#ff2ec7')
+                    .setFooter('By: ' + message.author.tag);
+                    message.channel.send(embed);
+                    message.delete();
+                    fs.writeFile("./mutes.json", JSON.stringify (client.mute, null, 4), err => {
+                        if(err) throw err;
+                    });
+                } else {
+                    message.channel.send('You need to provide a reason!');
+                }
+            } else {
+                message.channel.send('You need to mention somebody!');
+            }
+        } else {
+            message.channel.send('You do not have the required permission.(KICK_MEMBERS)');
+        }
+    }
+
+});
 const getDefaultChannel = (guild) => {
     // get "original" default channel
     if(guild.channels.cache.has(guild.id))
@@ -30,7 +154,7 @@ const getDefaultChannel = (guild) => {
     "WHOOP WHOOP",
     "証拠ちゃん可愛い", 
     "Shibuya-chan is cute af",
-    "on " + client.guilds.cache.size + ' servers',
+    ' made by Kogeki *uwu*',
     "animal crossing: hello world",
     "*uwu*",
     "日本人ですか?"
@@ -42,11 +166,116 @@ client.on("ready", ()=> {
         client.user.setActivity(activities_list[index]); // sets bot's activities to one of the phrases in the arraylist.
     }, 5000);
 });
+
+client.on('message', message=> {
+    var id = message.guild.id;
+    var user = message.author.id;
+    let xpAdd = Math.floor(Math.random() * 3) + 7;
+    if(!message.author.bot) {
+        if(client.data[id].levelsystem === 'true') {
+            if(!message.content.startsWith(client.data[id].prefix)) {
+                if(!client.xp[id]) {
+                    client.xp[id] = {
+
+                    }
+                    fs.writeFile("./xp.json", JSON.stringify (client.xp, null, 4), err => {
+                        if(err) throw err;
+                    });
+                }
+                if(!client.xp[id][user]) {
+                    client.xp[id][user] = {
+                        xp: 0,
+                        level: 1
+                    }
+                    fs.writeFile("./xp.json", JSON.stringify (client.xp, null, 4), err => {
+                        if(err) throw err;
+                    });
+                    sendEmbed(message, client.data[id].levelchannel, "Level data", message.author.username + "'s account has been inserted into database");
+                   
+                }
+                
+                let curxp =  client.xp[id][user].xp;
+                let curlvl = client.xp[id][user].level;
+                let nextlvl = client.xp[id][user].level * 500;
+                client.xp[id][user].xp = curxp + xpAdd;
+                if(nextlvl <= client.xp[id][user].xp) {
+                    client.xp[id][user].level = curlvl + 1;
+                    let lvlup = new Discord.MessageEmbed()
+                    .setColor('#FF69B4')
+                    .setTitle('Level Up')
+                    .setDescription(message.author.username+' is now level ' + client.xp[id][user].level);
+                    const channel = message.guild.channels.cache.find(c => c.name === client.data[id].levelchannel);
+                    if(channel) {
+                        channel.send(lvlup);
+                    }
+                }
+                if(client.xp[id][user].level === 5) {
+                    if(message.guild.roles.cache.find(r => r.name === 'Level 5')) {
+                        if(!message.guild.me.hasPermission('ADMINISTRATOR')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)");
+                        message.member.roles.add(message.guild.roles.cache.find(r => r.name === 'Level 5'));
+                    } else {
+                        sendEmbed(member, getDefaultChannel(member.guild), "Level role", "**WARNING**: The Level 5 role is missing! Please create one or *reset* to manage it!")
+                    }
+                }
+                if(client.xp[id][user].level === 10) {
+                    if(message.guild.roles.cache.find(r => r.name === 'Level 10')) {
+                        if(!message.guild.me.hasPermission('ADMINISTRATOR')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)");
+                        message.member.roles.add(message.guild.roles.cache.find(r => r.name === 'Level 10'));
+                    } else {
+                        sendEmbed(member, getDefaultChannel(member.guild), "Level role", "**WARNING**: The Level 10 role is missing! Please create one or *reset* to manage it!")
+                    }
+                }
+                if(client.xp[id][user].level === 20) {
+                    if(message.guild.roles.cache.find(r => r.name === 'Level 20')) {
+                        if(!message.guild.me.hasPermission('ADMINISTRATOR')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)");
+                        message.member.roles.add(message.guild.roles.cache.find(r => r.name === 'Level 20'));
+                    } else {
+                        sendEmbed(member, getDefaultChannel(member.guild), "Level role", "**WARNING**: The Level 20 role is missing! Please create one or *reset* to manage it!")
+                    }
+                }
+                if(client.xp[id][user].level === 30) {
+                    if(message.guild.roles.cache.find(r => r.name === 'Level 30')) {
+                        if(!message.guild.me.hasPermission('ADMINISTRATOR')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)");
+                        message.member.roles.add(message.guild.roles.cache.find(r => r.name === 'Level 30'));
+                    } else {
+                        sendEmbed(member, getDefaultChannel(member.guild), "Level role", "**WARNING**: The Level 30 role is missing! Please create one or *reset* to manage it!")
+                    }
+                }
+                if(client.xp[id][user].level === 40) {
+                    if(message.guild.roles.cache.find(r => r.name === 'Level 40')) {
+                        if(!message.guild.me.hasPermission('ADMINISTRATOR')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)");
+                        message.member.roles.add(message.guild.roles.cache.find(r => r.name === 'Level 40'));
+                    } else {
+                        sendEmbed(member, getDefaultChannel(member.guild), "Level role", "**WARNING**: The Level 40 role is missing! Please create one or *reset* to manage it!")
+                    }
+                }
+                if(client.xp[id][user].level === 50) {
+                    if(message.guild.roles.cache.find(r => r.name === 'Level 50')) {
+                        if(!message.guild.me.hasPermission('ADMINISTRATOR')) 
+                        sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)");
+                        message.member.roles.add(message.guild.roles.cache.find(r => r.name === 'Level 50'));
+                    } else {
+                        sendEmbed(message, getDefaultChannel(message.guild), "Level role", "**WARNING**: The Level 50 role is missing! Please create one or *reset* to manage it!")
+                    }
+                }
+                fs.writeFile("./xp.json", JSON.stringify (client.xp, null, 4), err => {
+                    if(err) throw err;
+                });
+
+            }
+        }
+    }
+});
+
 client.on("message", message => {
     if(message.author.id === '232186922812833792') {
         if(message.content.startsWith('-S')) {
-            message.delete()
+            message.channel.send("Shutting down")
             .then(client.destroy());
+        }
+    } else {
+        if(message.content.startsWith('-S')) { 
+            message.channel.send("You are not permitted to do that.");
         }
     }
 });
@@ -63,32 +292,145 @@ client.on("message", message => {
             welcome: 'false',
             nsfw: 'false',
             editrole: 'admin',
-            defaultrole: 'false'
+            defaultrole: 'false',
+            welcomechannel: 'welcome',
+            levelsystem: 'false',
+            levelchannel: 'level-up'
         }
         //write to the json
         fs.writeFile("./servers.json", JSON.stringify (client.data, null, 4), err => {
             if(err) throw err;
         });
-        
-        return;
+        sendEmbed(message.channel.name, 'Settings', 'The server has been inserted into database, please try again.');
+       
     }
     let _con = client.data[id].prefix;
     //help command
     if(msg.startsWith(_con + 'help')) {
         const embed = new Discord.MessageEmbed()
-                    .setTitle('Fun, NSFW, Beatbox & Moderation')
-                    .setColor('#f23f23')
-                    .setDescription('Prefix: ' + _con)
-                    .addField("Moderation", "`logs` `welcome` `prefix` `nsfw` `reset` `defaultrole`", true)
-                    .addField("Fun", "`insult` `praise` `gif` `8ball` `milgirls` `wp` `render` `uwu`", true)
-                    .addField("NSFW", "`hentai` `ecchi` `hrender` `hx`", true)
-                    .addField("Beatbox", "`pattern` `randomsound` `basics` `beatboxer`", true)
-                    .setFooter('Support: https://discord.gg/ZjSBhuD');
+                    .setAuthor(client.user.username + ": Have fun!", client.user.displayAvatarURL())
+                    .setColor('#FF69B4')
+                    .setDescription('Prefix: `' + _con + '`' + "    Example: `"+_con + "praise`")
+                    .addField(":hammer:  Moderation", "`welcome`  `levelsystem`  `prefix`  `reset`  `defaultrole`", true)
+                    .addField(":repeat:  Redirection", "`welcomechannel`  `levelchannel`  `nsfw`", true)
+                    .addField(":purple_heart:   Support", "`invite`  `donate`  `support`", true)
+                    .addField(":frame_photo:  Images", "`gif`  `milgirls` `wp`  `render`  `uwu`", true)
+                    .addField("<:blobevil:677233622708781056>  Fun", "`rank`  `insult`  `praise`  `8ball`", true)
+                    .addField("<:LewdMegumin:604743431620788464>  Hentai", "`hentai`  `ecchi`  `hrender`  `hx`", true)
+                    .addField("<:Hehe:705519890366333130>  Beatbox", "`pattern`  `randomsound`  `basics`", true)
+                    .setFooter('Support: https://discord.gg/ZjSBhuD | Made By Kogeki#8633');
                 message.channel.send(embed);
     }
+    if(msg.startsWith(_con + 'donate')) {
+        const embed = new Discord.MessageEmbed()
+        .setAuthor(client.user.username + ": Have fun!", client.user.displayAvatarURL())
+        .setColor('#FF69B4')
+        .setDescription("Donate link: [donate here](https://donatebot.io/checkout/695298882619572295)")
+        .setFooter('Support: https://discord.gg/ZjSBhuD | Made By Kogeki#8633');
+    message.channel.send(embed);
+    }
+    if(msg.startsWith(_con + 'support')) {
+        const embed = new Discord.MessageEmbed()
+        .setAuthor(client.user.username + ": Have fun!", client.user.displayAvatarURL())
+        .setColor('#FF69B4')
+        .setDescription("Support discord link: https://discord.gg/ZjSBhuD")
+        .setFooter('Support: https://discord.gg/ZjSBhuD | Made By Kogeki#8633');
+    message.channel.send(embed);
+    }
+    if(msg.startsWith(_con + 'invite')) {
+        const embed = new Discord.MessageEmbed()
+        .setAuthor(client.user.username + ": Have fun!", client.user.displayAvatarURL())
+        .setColor('#FF69B4')
+        .setDescription("[Invite link](https://discordapp.com/oauth2/authorize?client_id=703612286161387531&scope=bot&permissions=8)")
+        .setFooter('Support: https://discord.gg/ZjSBhuD | Made By Kogeki#8633');
+    message.channel.send(embed);
+    }
+    if(msg.startsWith(_con + 'levelchannel')) { 
+        if(message.member.hasPermission('ADMINISTRATOR')) {
+            if(client.data[id].levelsystem === 'true') { 
+                if(!message.guild.me.hasPermission('MANAGE_CHANNELS')) return message.channel.send('I do not have permission for that! (MANAGE_CHANNELS)');
+                let neu = client.data[id].prefix;
+            const args = message.content.slice(neu.length+12).trim().split(/ +/g);
+            if(args != ''){
+                if(message.guild.channels.cache.find(c => c.name === args[0])) {
+                    client.data[id] = {
+                        prefix: client.data[id].prefix,
+                        logs: client.data[id].logs,
+                        music: client.data[id].music,
+                        welcome: client.data[id].welcome,
+                        nsfw: client.data[id].nsfw,
+                        editrole: client.data[id].editrole,
+                        defaultrole: client.data[id].defaultrole,
+                        welcomechannel: client.data[id].welcomechannel,
+                        levelsystem: client.data[id].levelsystem,
+                        levelchannel: args[0]
+                    }
+                    fs.writeFile("./servers.json", JSON.stringify (client.data, null, 4), err => {
+                        if(err) throw err;
+                    });
+                    sendEmbed(message,message.channel.name, 'Level channel', 'Levelchannel has been set to: ' + args[0]);
+                    //message.channel.send();
+                } else {
+                    sendEmbed(message, message.channel.name, 'Level channel', '404 Channel not found, make sure to first create the channel');
+                }
+            } else {
+                sendEmbed(message,message.channel.name, 'Level channel', 'You need to provide a channel name');
+               // message.reply('You need to provide a channel name');
+            }
+            
+             } else {
+                sendEmbed(message,message.channel.name, 'Level channel', "Levelsystem is disabled on this server");
+               // message.channel.send("Welcome messages are disabled on this server");
+             }
+
+        }
+     }
+    if(msg.startsWith(_con + 'welcomechannel')) { 
+        if(message.member.hasPermission('ADMINISTRATOR')) {
+            
+            if(client.data[id].welcome === 'true') {
+                if(!message.guild.me.hasPermission('MANAGE_CHANNELS')) return message.channel.send('I do not have permission for that! (MANAGE_CHANNELS)');
+                let neu = client.data[id].prefix;
+            const args = message.content.slice(neu.length+14).trim().split(/ +/g);
+            if(args != ''){
+                if(message.guild.channels.cache.find(c => c.name === args[0])) {
+                    client.data[id] = {
+                        prefix: client.data[id].prefix,
+                        logs: client.data[id].logs,
+                        music: client.data[id].music,
+                        welcome: client.data[id].welcome,
+                        nsfw: client.data[id].nsfw,
+                        editrole: client.data[id].editrole,
+                        defaultrole: client.data[id].defaultrole,
+                        welcomechannel: args[0],
+                        levelsystem: client.data[id].levelsystem,
+                        levelchannel: client.data[id].levelchannel
+                    }
+                    fs.writeFile("./servers.json", JSON.stringify (client.data, null, 4), err => {
+                        if(err) throw err;
+                    });
+                    sendEmbed(message,message.channel.name, 'Welcome channel', 'Welcomechannel has been set to: ' + args[0]);
+                    //message.channel.send();
+                } else {
+                    sendEmbed(message,message.channel.name, 'Welcome channel', '404 Channel not found, make sure to first create the channel');
+                   // message.reply();
+                }
+            } else {
+                sendEmbed(message,message.channel.name, 'Welcome channel', 'You need to provide a channel name');
+               // message.reply('You need to provide a channel name');
+            }
+            
+             } else {
+                sendEmbed(message,message.channel.name, 'Welcome channel', "Welcome messages are disabled on this server");
+               // message.channel.send("Welcome messages are disabled on this server");
+             }
+
+        }
+     }
     if(msg.startsWith(_con + 'logs')) {
-        if(message.member.guild.me.hasPermission('ADMINISTRATOR')) {
+        if(message.member.hasPermission('ADMINISTRATOR')) {
             if(client.data[id].logs === 'false') {
+                if(!message.guild.me.hasPermission('MANAGE_CHANNELS')) return message.channel.send('I do not have permission for that! (MANAGE_CHANNELS)');
                 message.guild.channels.create('logs', { reason: 'Log channel' })
                         .then(console.log)
                         .catch(console.error);
@@ -103,7 +445,10 @@ client.on("message", message => {
                             welcome: client.data[id].welcome,
                             nsfw: client.data[id].nsfw,
                             editrole: client.data[id].editrole,
-                            defaultrole: client.data[id].defaultrole
+                            defaultrole: client.data[id].defaultrole,
+                            welcomechannel: client.data[id].welcomechannel,
+                            levelsystem: client.data[id].levelsystem,
+                            levelchannel: client.data[id].levelchannel
                         }
                         fs.writeFile("./servers.json", JSON.stringify (client.data, null, 4), err => {
                             if(err) throw err;
@@ -116,12 +461,15 @@ client.on("message", message => {
                         welcome: client.data[id].welcome,
                         nsfw: client.data[id].nsfw,
                         editrole: client.data[id].editrole,
-                        defaultrole: client.data[id].defaultrole
+                        defaultrole: client.data[id].defaultrole,
+                        welcomechannel: client.data[id].welcomechannel,
+                        levelsystem: client.data[id].levelsystem,
+                        levelchannel: client.data[id].levelchannel
                     }
                     fs.writeFile("./servers.json", JSON.stringify (client.data, null, 4), err => {
                         if(err) throw err;
                     });
-                    message.channel.send('Logs are now enabled');
+                    sendEmbed(message, message.channel.name, "Settings", "Logs are now enabled.");
                 }
             } else if(client.data[id].logs === 'true') {
                 client.data[id] = {
@@ -131,18 +479,23 @@ client.on("message", message => {
                     welcome: client.data[id].welcome,
                     nsfw: client.data[id].nsfw,
                     editrole: client.data[id].editrole,
-                    defaultrole: client.data[id].defaultrole
+                    defaultrole: client.data[id].defaultrole,
+                    welcomechannel: client.data[id].welcomechannel,
+                    levelsystem: client.data[id].levelsystem,
+                    levelchannel: client.data[id].levelchannel
                 }
                 fs.writeFile("./servers.json", JSON.stringify (client.data, null, 4), err => {
                     if(err) throw err;
                 });
-                message.channel.send('Logs are now disabled');
+                sendEmbed(message, message.channel.name, "Settings", "Logs are now disabled.");
             }
+        } else {
+            sendEmbed(message, message.channel.name, "Settings", "You are not permitted to do that. Need ADMINISTRATOR for that.");
         }
     }
     if(msg.startsWith(_con + 'prefix')) {
-        if(message.author.bot) return;
-        if(message.member.guild.me.hasPermission('ADMINISTRATOR')) {
+        if(message.author.bot)
+        if(message.member.hasPermission('ADMINISTRATOR')) {
             let neu = client.data[id].prefix;
             const args = message.content.slice(neu.length+6).trim().split(/ +/g);
             if(args != ''){
@@ -153,19 +506,25 @@ client.on("message", message => {
                     welcome: client.data[id].welcome,
                     nsfw: client.data[id].nsfw,
                     editrole: client.data[id].editrole,
-                    defaultrole: client.data[id].defaultrole
+                    defaultrole: client.data[id].defaultrole,
+                    welcomechannel: client.data[id].welcomechannel,
+                    levelsystem: client.data[id].levelsystem,
+                    levelchannel: client.data[id].levelchannel
                 }
                 fs.writeFile("./servers.json", JSON.stringify (client.data, null, 4), err => {
                     if(err) throw err;
                 });
-                message.channel.send('Prefix of the bot has been set to: ' + args[0]);
+                sendEmbed(message, message.channel.name, "Settings", "Prefix of the bot has been set to: " + args[0]);
+                //message.channel.send('Prefix of the bot has been set to: ' + args[0]);
             } else {
-                message.channel.send(`You need to enter a prefix.`);
+                sendEmbed(message, message.channel.name, "Settings", "You need to enter a prefix");
             }
+        } else {
+            sendEmbed(message, message.channel.name, "Settings", "You are not permitted to do that. Need ADMINISTRATOR for that.");
         }
     }
     if(msg.startsWith(_con + 'nsfw')) {
-        if(message.member.guild.me.hasPermission('ADMINISTRATOR')) {
+        if(message.member.hasPermission('ADMINISTRATOR')) {
             if(client.data[id].nsfw === 'false') {
                 client.data[id] = {
                     prefix: client.data[id].prefix,
@@ -174,12 +533,15 @@ client.on("message", message => {
                     welcome: client.data[id].welcome,
                     nsfw: 'true',
                     editrole: client.data[id].editrole,
-                    defaultrole: client.data[id].defaultrole
+                    defaultrole: client.data[id].defaultrole,
+                    welcomechannel: client.data[id].welcomechannel,
+                    levelsystem: client.data[id].levelsystem,
+                    levelchannel: client.data[id].levelchannel
                 }
                 fs.writeFile("./servers.json", JSON.stringify (client.data, null, 4), err => {
                     if(err) throw err;
                 });
-                message.channel.send('NSFW Content is now allowed on this server!');
+                sendEmbed(message, message.channel.name, "NSFW", "NSFW is now allowed on this server.");
             } else if(client.data[id].nsfw === 'true') {
                 client.data[id] = {
                     prefix: client.data[id].prefix,
@@ -188,20 +550,25 @@ client.on("message", message => {
                     welcome: client.data[id].welcome,
                     nsfw: 'false',
                     editrole: client.data[id].editrole,
-                    defaultrole: client.data[id].defaultrole
+                    defaultrole: client.data[id].defaultrole,
+                    welcomechannel: client.data[id].welcomechannel,
+                    levelsystem: client.data[id].levelsystem,
+                    levelchannel: client.data[id].levelchannel
                 }
                 fs.writeFile("./servers.json", JSON.stringify (client.data, null, 4), err => {
                     if(err) throw err;
                 });
-                message.channel.send('NSFW Content is no more allowed on this server!');
+                sendEmbed(message, message.channel.name, "NSFW", "NSFW is now disabled on this server");
             }
+        } else {
+            sendEmbed(message, message.channel.name, "NSFW", "You are not permitted to do that. Need ADMINISTRATOR for that.");
         }
     }
     if(msg.startsWith(_con + 'editrole')) {
         
     }
     if(msg.startsWith(_con + 'reset')) {
-        if(message.member.guild.me.hasPermission('ADMINISTRATOR')) { 
+        if(message.member.hasPermission('ADMINISTRATOR')) { 
             client.data[id] = {
                 prefix: '.',
                 logs: 'false',
@@ -209,19 +576,26 @@ client.on("message", message => {
                 welcome: 'false',
                 nsfw: 'false',
                 editrole: 'admin',
-                defaultrole: 'false'
+                defaultrole: 'false',
+                welcomechannel: 'welcome',
+                levelsystem: 'false',
+                levelchannel: 'level-up'
             }
             //write to the json
             fs.writeFile("./servers.json", JSON.stringify (client.data, null, 4), err => {
                 if(err) throw err;
             });
-            message.reply('Bot settings have been reset')
+            sendEmbed(message, message.channel.name, "Settings", "Bot settings have been reset");
+        } else {
+            sendEmbed(message, message.channel.name, "Settings", "You are not permitted to do that. Need ADMINISTRATOR for that.");
+            //message.channel.send("You are not permitted to do that. Need ADMINISTRATOR for that.");
         }
     }
-    if(msg.startsWith(_con + 'welcome')) {
-        if(message.member.guild.me.hasPermission('ADMINISTRATOR')) {
+    if(msg.startsWith(_con + 'welcome')&& !msg.startsWith(_con + 'welcomechannel')) {
+        if(message.member.hasPermission('ADMINISTRATOR')) {
+            if(!message.guild.me.hasPermission('ADMINISTRATOR')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)");
             if(client.data[id].welcome === 'false') {
-                message.channel.send('Welcomes are now enabled');
+                sendEmbed(message, message.channel.name, "Settings", "Welcomes are now enabled.");
                 message.guild.channels.create('welcome', { reason: 'welcome channel' })
                         .then(console.log)
                         .catch(console.error);
@@ -236,7 +610,10 @@ client.on("message", message => {
                             welcome: 'true',
                             nsfw: client.data[id].nsfw,
                             editrole: client.data[id].editrole,
-                            defaultrole: client.data[id].defaultrole
+                            defaultrole: client.data[id].defaultrole,
+                            welcomechannel: client.data[id].welcomechannel,
+                            levelsystem: client.data[id].levelsystem,
+                            levelchannel: client.data[id].levelchannel
                         }
                         fs.writeFile("./servers.json", JSON.stringify (client.data, null, 4), err => {
                             if(err) throw err;
@@ -249,7 +626,10 @@ client.on("message", message => {
                         welcome: 'true',
                         nsfw: client.data[id].nsfw,
                         editrole: client.data[id].editrole,
-                        defaultrole: client.data[id].defaultrole
+                        defaultrole: client.data[id].defaultrole,
+                        welcomechannel: client.data[id].welcomechannel,
+                        levelsystem: client.data[id].levelsystem,
+                        levelchannel: client.data[id].levelchannel
                     }
                     fs.writeFile("./servers.json", JSON.stringify (client.data, null, 4), err => {
                         if(err) throw err;
@@ -264,17 +644,26 @@ client.on("message", message => {
                     welcome: 'false',
                     nsfw: client.data[id].nsfw,
                     editrole: client.data[id].editrole,
-                    defaultrole: client.data[id].defaultrole
+                    defaultrole: client.data[id].defaultrole,
+                    welcomechannel: client.data[id].welcomechannel,
+                    levelsystem: client.data[id].levelsystem,
+                    levelchannel: client.data[id].levelchannel
                 }
                 fs.writeFile("./servers.json", JSON.stringify (client.data, null, 4), err => {
                     if(err) throw err;
                 });
-                message.channel.send('Welcomes are now disabled');
+                if(message.guild.channels.cache.find(c => c.name === client.data[id].welcomechannel)) {
+                    message.guild.channels.cache.find(c => c.name === client.data[id].welcomechannel).delete();
+                }
+                sendEmbed(message, message.channel.name, "Settings", "Welcomes are now disabled");
             }
+        } else {
+            sendEmbed(message, message.channel.name, "Settings", "You are not permitted to do that. Need ADMINISTRATOR for that.");
         }
     }
     if(msg.startsWith(_con + 'defaultrole')) {
-        if(message.member.guild.me.hasPermission('ADMINISTRATOR')) {  
+        if(message.member.hasPermission('ADMINISTRATOR')) {  
+            if(!message.guild.me.hasPermission('MANAGE_ROLES')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(MANAGE_ROLES)");
             const args = message.content.slice(_con.length+11).trim().split(/ +/g);
             if(client.data[id].defaultrole === 'false') {
             if(args[0] != 'clear') {
@@ -286,7 +675,10 @@ client.on("message", message => {
                     welcome: client.data[id].welcome,
                     nsfw: client.data[id].nsfw,
                     editrole: client.data[id].editrole,
-                    defaultrole: args[0]
+                    defaultrole: args[0],
+                    welcomechannel: client.data[id].welcomechannel,
+                    levelsystem: client.data[id].levelsystem,
+                    levelchannel: client.data[id].levelchannel
                 }
                 fs.writeFile("./servers.json", JSON.stringify (client.data, null, 4), err => {
                     if(err) throw err;
@@ -300,11 +692,16 @@ client.on("message", message => {
                   })
                     .then(console.log)
                     .catch(console.error);
-                message.channel.send('Defaultrole of the server has been set to: ' + args[0]);
+                    sendEmbed(message, message.channel.name, "Settings", 'Defaultrole of the server has been set to: ' + args[0]);
+                //message.channel.send('Defaultrole of the server has been set to: ' + args[0]);
                 } else {
-                    message.channel.send('You need to provide a rolename or **clear**')
+                    sendEmbed(message, message.channel.name, "Settings", 'You need to provide a rolename or **clear**');
+                    //message.channel.send('You need to provide a rolename or **clear**');
                 }
             } else if(args[0] === 'clear') {
+                if(message.guild.roles.cache.find(r => r.name === client.data[id].defaultrole)) {
+                    message.guild.roles.cache.find(r => r.name === client.data[id].defaultrole).delete();
+                }
                 client.data[id] = {
                     prefix: client.data[id].prefix,
                     logs: client.data[id].logs,
@@ -312,14 +709,110 @@ client.on("message", message => {
                     welcome: client.data[id].welcome,
                     nsfw: client.data[id].nsfw,
                     editrole: client.data[id].editrole,
-                    defaultrole: 'false'
+                    defaultrole: 'false',
+                    welcomechannel: client.data[id].welcomechannel,
+                    levelsystem: client.data[id].levelsystem,
+                    levelchannel: client.data[id].levelchannel
                 }
                 fs.writeFile("./servers.json", JSON.stringify (client.data, null, 4), err => {
                     if(err) throw err;
                 });
-                message.channel.send('Defaultrole of the server has been cleared');
+                sendEmbed(message, message.channel.name, "Settings", 'Default role has been cleared');
             }
         }
+        } else {
+            sendEmbed(message, message.channel.name, "Settings", "You are not permitted to do that. Need ADMINISTRATOR for that.");
+           // message.channel.send("You are not permitted to do that. Need ADMINISTRATOR for that.");
+        }
+    }
+    if(msg.startsWith(_con + 'levelsystem')) {
+        if(message.member.hasPermission('ADMINISTRATOR')) {  
+            if(!message.guild.me.hasPermission('ADMINISTRATOR')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)");
+            const args = message.content.slice(_con.length+11).trim().split(/ +/g);
+            if(client.data[id].levelsystem === 'false') {
+                client.data[id] = {
+                    prefix: client.data[id].prefix,
+                    logs: client.data[id].logs,
+                    music: client.data[id].music,
+                    welcome: client.data[id].welcome,
+                    nsfw: client.data[id].nsfw,
+                    editrole: client.data[id].editrole,
+                    defaultrole: client.data[id].defaultrole,
+                    welcomechannel: client.data[id].welcomechannel,
+                    levelsystem: 'true',
+                    levelchannel: 'level-up'
+                }
+                fs.writeFile("./servers.json", JSON.stringify (client.data, null, 4), err => {
+                    if(err) throw err;
+                });
+                if(!client.xp[id]) {
+                    client.xp[id] = {
+
+                    }
+                }
+                    fs.writeFile("./xp.json", JSON.stringify (client.xp, null, 4), err => {
+                        if(err) throw err;
+                    });
+                message.guild.channels.create('level-up', { reason: 'Log channel' })
+                        .then(console.log)
+                        .catch(console.error);
+                roleC(message, "Level 5", "Level 5 Role", '#ffffff');
+                roleC(message, "Level 10", "Level 10 Role", '#4da6ff');
+                roleC(message, "Level 20", "Level 20 Role", '#00ffff');
+                roleC(message, "Level 30", "Level 30 Role", '#ff0000');
+                roleC(message, "Level 40", "Level 40 Role", '#ff4297');
+                roleC(message, "Level 50", "Level 50 Role", '#ff00b7');
+                    sendEmbed(message, message.channel.name, "Settings", 'Levelsystem has been enabled, roles and level-up channel have been created.');
+                //message.channel.send('Defaultrole of the server has been set to: ' + args[0]);
+        } else if(client.data[id].levelsystem === 'true') {
+            if(message.guild.channels.cache.find(c => c.name === client.data[id].levelchannel)) {
+                message.guild.channels.cache.find(c => c.name === client.data[id].levelchannel).delete();
+            }
+            client.data[id] = {
+                prefix: client.data[id].prefix,
+                logs: client.data[id].logs,
+                music: client.data[id].music,
+                welcome: client.data[id].welcome,
+                nsfw: client.data[id].nsfw,
+                editrole: client.data[id].editrole,
+                defaultrole: client.data[id].defaultrole,
+                welcomechannel: client.data[id].welcomechannel,
+                levelsystem: 'false',
+                levelchannel: 'level-up'
+            }
+            if(message.guild.roles.cache.find(role => role.name === 'Level 5')) {
+                if(!message.guild.me.hasPermission('ADMINISTRATOR')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)");
+                message.guild.roles.cache.find(role => role.name === 'Level 5').delete();
+            }
+            if(message.guild.roles.cache.find(role => role.name === 'Level 10')) {
+                if(!message.guild.me.hasPermission('ADMINISTRATOR')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)");
+                message. guild.roles.cache.find(role => role.name === 'Level 10').delete();
+            }
+            if(message.guild.roles.cache.find(role => role.name === 'Level 20')) {
+                if(!message.guild.me.hasPermission('ADMINISTRATOR')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)");
+                message.guild.roles.cache.find(role => role.name === 'Level 20').delete();
+            }
+            if(message.guild.roles.cache.find(role => role.name === 'Level 30')) {
+                if(!message.guild.me.hasPermission('ADMINISTRATOR')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)");
+                message. guild.roles.cache.find(role => role.name === 'Level 30').delete();
+            }
+            if(message.guild.roles.cache.find(role => role.name === 'Level 40')) {
+                if(!message.guild.me.hasPermission('ADMINISTRATOR')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)");
+                message.guild.roles.cache.find(role => role.name === 'Level 40').delete();
+            }
+            if(message.guild.roles.cache.find(role => role.name === 'Level 50')) {
+                if(!message.guild.me.hasPermission('ADMINISTRATOR')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)");
+                message.guild.roles.cache.find(role => role.name === 'Level 50').delete();
+            }
+            
+            fs.writeFile("./servers.json", JSON.stringify (client.data, null, 4), err => {
+                if(err) throw err;
+            });
+            sendEmbed(message, message.channel.name, "Settings", 'Levelsystem has been disabled.');
+        }
+        } else {
+            sendEmbed(message, message.channel.name, "Settings", "You are not permitted to do that. Need ADMINISTRATOR for that.");
+           // message.channel.send("You are not permitted to do that. Need ADMINISTRATOR for that.");
         }
     }
     //fun commands
@@ -333,6 +826,18 @@ client.on("message", message => {
         var random = Math.floor (Math.random() * (number-1+1)) + 1;
         message.channel.send({files: ["./images/" + random  + ".png"]});
         message.react(':pUwu:677233543734231040');
+      }
+      if (msg.startsWith(_con + 'rank')) { 
+        if(client.data[id].levelsystem === "true") {
+            if(client.xp[id][message.author.id]) {
+                if(message.channel.name === client.data[id].levelchannel) {
+                    sendEmbed(message, client.data[id].levelchannel, "Rank", message.author.username + " is level " + client.xp[id][message.author.id].level)
+                   
+                }
+            }
+        } else {
+            
+        }
       }
       if (msg.startsWith(_con + 'render')) { 
         number = 77;
@@ -636,7 +1141,11 @@ client.on("guildCreate", guild => {
             music: 'false',
             welcome: 'false',
             nsfw: 'false',
-            editrole: 'admin'
+            editrole: 'admin',
+            defaultrole: 'false',
+            welcomechannel: 'welcome',
+            levelsystem: 'false',
+            levelchannel: 'level-up'
         }
         fs.writeFile("./servers.json", JSON.stringify (client.data, null, 4), err => {
             if(err) throw err;
@@ -647,32 +1156,23 @@ client.on('guildMemberAdd', member => {
     var id = member.guild.id;
     if(client.data[id].welcome ==='true') {
         if(member.guild.channels.cache.find(c => c.name === 'welcome')) {
+            if(!member.guild.me.hasPermission('ADMINISTRATOR')) getDefaultChannel(member.guild).send(sendEmbed(member, getDefaultChannel(member.guild), "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)"));
             const channelz = member.guild.channels.cache.find(c => c.name === 'welcome');
             const embed = new Discord.MessageEmbed()
                 .setThumbnail(member.user.displayAvatarURL())
-                .setTitle("A new user checked in.")
+                .setAuthor(member.displayAvatarURL(),"A new user checked in.")
                 .setColor('#ff2ec7')
                 .setDescription(member.user.username)
                 .addField('Account creation:',member.user.createdAt,true)
                 .setFooter('Tag: ' + member.user.tag);
             channelz.send(embed);
         } else {
-            message.guild.channels.create('welcome', { reason: 'welcome channel' })
-                        .then(console.log)
-                        .catch(console.error);
-                        const channelz = member.guild.channels.cache.find(c => c.name === 'welcome');
-                        const embed = new Discord.MessageEmbed()
-                            .setThumbnail(member.user.displayAvatarURL())
-                            .setTitle("A new user checked in.")
-                            .setColor('#ff2ec7')
-                            .setDescription(member.user.username)
-                            .addField('Account creation:',member.user.createdAt,true)
-                            .setFooter('Tag: ' + member.user.tag);
-                        channelz.send(embed);
+            sendEmbed(member, getDefaultChannel(member.guild), "Welcome channel", "**WARNING**: The welcome channel is missing! Please use *prefix* or *reset* to manage it!");
         }
     }
     if(client.data[id].logs === true) {
         if(member.guild.channels.cache.find(c => c.name === 'logs')) { 
+            if(!member.guild.me.hasPermission('ADMINISTRATOR')) getDefaultChannel(member.guild).send(sendEmbed(member, getDefaultChannel(member.guild), "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)"));
             const channelz = member.guild.channels.cache.find(c => c.name === 'logs');
             const embed = new Discord.MessageEmbed()
                 .setThumbnail(member.user.displayAvatarURL())
@@ -686,7 +1186,10 @@ client.on('guildMemberAdd', member => {
     }
     if(client.data[id].defaultrole != 'false') {
         if(member.guild.roles.cache.find(r => r.name === client.data[id].defaultrole)) {
-            member.guild.roles.add(member.guild.roles.cache.find(r => r.name === client.data[id].defaultrole));
+            if(!member.guild.me.hasPermission('ADMINISTRATOR')) getDefaultChannel(member.guild).send(sendEmbed(member, getDefaultChannel(member.guild), "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)"));
+            member.roles.add(member.guild.roles.cache.find(r => r.name === client.data[id].defaultrole));
+        } else {
+            sendEmbed(member, getDefaultChannel(member.guild), "Default role", "**WARNING**: The default role is missing! Please use *prefix* or *reset* to manage it!");
         }
     }
 });
@@ -710,5 +1213,20 @@ client.on('guildMemberRemove', member => {
         }
     }
 });
+client.on('guildMemberAdd', member => {
+    if(member.guild.id === '705174264894062712') {
+        member.roles.add(member.guild.roles.cache.find(r => r.name === "NORMIE"));
+    }
+});
+
+function sendEmbed(message, channelt, name, messages) {
+    const channelz = message.guild.channels.cache.find(c => c.name === channelt);
+            const embed = new Discord.MessageEmbed()
+                .setTitle(name)
+                .setColor('#FF69B4')
+                .setDescription(messages);
+            channelz.send(embed);
+}
+
 client.data = require('./servers.json');
 client.login(token);
