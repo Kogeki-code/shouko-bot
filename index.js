@@ -89,7 +89,7 @@ client.on('message', message => {
         if(message.member.hasPermission('KICK_MEMBERS')) {
             if(args[0]) {
                 if(args[1]) {
-                    if(!message.guild.me.hasPermission('ADMINISTRATOR')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)");
+                    if(!message.guild.me.hasPermission('MANAGE_ROLES')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)");
                     const toKick = message.mentions.members.first() || message.guild.members.get(args[0]);
                     var user = toKick.id;
                     if(!toKick) {
@@ -211,7 +211,7 @@ client.on('message', message=> {
                 }
                 if(client.xp[id][user].level === 5) {
                     if(message.guild.roles.cache.find(r => r.name === 'Level 5')) {
-                        if(!message.guild.me.hasPermission('ADMINISTRATOR')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)");
+                        if(!message.guild.me.hasPermission('MANAGE_ROLES')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(MANAGE_ROLES)");
                         message.member.roles.add(message.guild.roles.cache.find(r => r.name === 'Level 5'));
                     } else {
                         sendEmbed(member, getDefaultChannel(member.guild), "Level role", "**WARNING**: The Level 5 role is missing! Please create one or *reset* to manage it!")
@@ -219,7 +219,7 @@ client.on('message', message=> {
                 }
                 if(client.xp[id][user].level === 10) {
                     if(message.guild.roles.cache.find(r => r.name === 'Level 10')) {
-                        if(!message.guild.me.hasPermission('ADMINISTRATOR')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)");
+                        if(!message.guild.me.hasPermission('MANAGE_ROLES')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(MANAGE_ROLES)");
                         message.member.roles.add(message.guild.roles.cache.find(r => r.name === 'Level 10'));
                     } else {
                         sendEmbed(member, getDefaultChannel(member.guild), "Level role", "**WARNING**: The Level 10 role is missing! Please create one or *reset* to manage it!")
@@ -227,7 +227,7 @@ client.on('message', message=> {
                 }
                 if(client.xp[id][user].level === 20) {
                     if(message.guild.roles.cache.find(r => r.name === 'Level 20')) {
-                        if(!message.guild.me.hasPermission('ADMINISTRATOR')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)");
+                        if(!message.guild.me.hasPermission('MANAGE_ROLES')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(MANAGE_ROLES)");
                         message.member.roles.add(message.guild.roles.cache.find(r => r.name === 'Level 20'));
                     } else {
                         sendEmbed(member, getDefaultChannel(member.guild), "Level role", "**WARNING**: The Level 20 role is missing! Please create one or *reset* to manage it!")
@@ -235,7 +235,7 @@ client.on('message', message=> {
                 }
                 if(client.xp[id][user].level === 30) {
                     if(message.guild.roles.cache.find(r => r.name === 'Level 30')) {
-                        if(!message.guild.me.hasPermission('ADMINISTRATOR')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)");
+                        if(!message.guild.me.hasPermission('MANAGE_ROLES')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(MANAGE_ROLES)");
                         message.member.roles.add(message.guild.roles.cache.find(r => r.name === 'Level 30'));
                     } else {
                         sendEmbed(member, getDefaultChannel(member.guild), "Level role", "**WARNING**: The Level 30 role is missing! Please create one or *reset* to manage it!")
@@ -243,7 +243,7 @@ client.on('message', message=> {
                 }
                 if(client.xp[id][user].level === 40) {
                     if(message.guild.roles.cache.find(r => r.name === 'Level 40')) {
-                        if(!message.guild.me.hasPermission('ADMINISTRATOR')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)");
+                        if(!message.guild.me.hasPermission('MANAGE_ROLES')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(MANAGE_ROLES)");
                         message.member.roles.add(message.guild.roles.cache.find(r => r.name === 'Level 40'));
                     } else {
                         sendEmbed(member, getDefaultChannel(member.guild), "Level role", "**WARNING**: The Level 40 role is missing! Please create one or *reset* to manage it!")
@@ -251,8 +251,8 @@ client.on('message', message=> {
                 }
                 if(client.xp[id][user].level === 50) {
                     if(message.guild.roles.cache.find(r => r.name === 'Level 50')) {
-                        if(!message.guild.me.hasPermission('ADMINISTRATOR')) 
-                        sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)");
+                        if(!message.guild.me.hasPermission('MANAGE_ROLES')) 
+                        sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(MANAGE_ROLES)");
                         message.member.roles.add(message.guild.roles.cache.find(r => r.name === 'Level 50'));
                     } else {
                         sendEmbed(message, getDefaultChannel(message.guild), "Level role", "**WARNING**: The Level 50 role is missing! Please create one or *reset* to manage it!")
@@ -593,7 +593,7 @@ client.on("message", message => {
     }
     if(msg.startsWith(_con + 'welcome')&& !msg.startsWith(_con + 'welcomechannel')) {
         if(message.member.hasPermission('ADMINISTRATOR')) {
-            if(!message.guild.me.hasPermission('ADMINISTRATOR')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)");
+            if(!message.guild.me.hasPermission('MANAGE_CHANNELS')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(MANAGE_CHANNELS)");
             if(client.data[id].welcome === 'false') {
                 sendEmbed(message, message.channel.name, "Settings", "Welcomes are now enabled.");
                 message.guild.channels.create('welcome', { reason: 'welcome channel' })
@@ -727,7 +727,7 @@ client.on("message", message => {
     }
     if(msg.startsWith(_con + 'levelsystem')) {
         if(message.member.hasPermission('ADMINISTRATOR')) {  
-            if(!message.guild.me.hasPermission('ADMINISTRATOR')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)");
+            if(!message.guild.me.hasPermission('MANAGE_CHANNELS') && !message.guild.me.hasPermission('MANAGE_ROLES')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(MANAGE_CHANNELS & MANAGE_ROLES)");
             const args = message.content.slice(_con.length+11).trim().split(/ +/g);
             if(client.data[id].levelsystem === 'false') {
                 client.data[id] = {
@@ -781,27 +781,27 @@ client.on("message", message => {
                 levelchannel: 'level-up'
             }
             if(message.guild.roles.cache.find(role => role.name === 'Level 5')) {
-                if(!message.guild.me.hasPermission('ADMINISTRATOR')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)");
+                if(!message.guild.me.hasPermission('MANAGE_ROLES')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(MANAGE_ROLES)");
                 message.guild.roles.cache.find(role => role.name === 'Level 5').delete();
             }
             if(message.guild.roles.cache.find(role => role.name === 'Level 10')) {
-                if(!message.guild.me.hasPermission('ADMINISTRATOR')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)");
+                if(!message.guild.me.hasPermission('MANAGE_ROLES')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(MANAGE_ROLES)");
                 message. guild.roles.cache.find(role => role.name === 'Level 10').delete();
             }
             if(message.guild.roles.cache.find(role => role.name === 'Level 20')) {
-                if(!message.guild.me.hasPermission('ADMINISTRATOR')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)");
+                if(!message.guild.me.hasPermission('MANAGE_ROLES')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(MANAGE_ROLES)");
                 message.guild.roles.cache.find(role => role.name === 'Level 20').delete();
             }
             if(message.guild.roles.cache.find(role => role.name === 'Level 30')) {
-                if(!message.guild.me.hasPermission('ADMINISTRATOR')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)");
+                if(!message.guild.me.hasPermission('MANAGE_ROLES')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(MANAGE_ROLES)");
                 message. guild.roles.cache.find(role => role.name === 'Level 30').delete();
             }
             if(message.guild.roles.cache.find(role => role.name === 'Level 40')) {
-                if(!message.guild.me.hasPermission('ADMINISTRATOR')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)");
+                if(!message.guild.me.hasPermission('MANAGE_ROLES')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(MANAGE_ROLES)");
                 message.guild.roles.cache.find(role => role.name === 'Level 40').delete();
             }
             if(message.guild.roles.cache.find(role => role.name === 'Level 50')) {
-                if(!message.guild.me.hasPermission('ADMINISTRATOR')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)");
+                if(!message.guild.me.hasPermission('MANAGE_ROLES')) return sendEmbed(message, message.channel.name, "Missing Permissions", "I don't have the required permissions to operate(MANAGE_ROLES)");
                 message.guild.roles.cache.find(role => role.name === 'Level 50').delete();
             }
             
@@ -1156,7 +1156,7 @@ client.on('guildMemberAdd', member => {
     var id = member.guild.id;
     if(client.data[id].welcome ==='true') {
         if(member.guild.channels.cache.find(c => c.name === 'welcome')) {
-            if(!member.guild.me.hasPermission('ADMINISTRATOR')) getDefaultChannel(member.guild).send(sendEmbed(member, getDefaultChannel(member.guild), "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)"));
+            if(!member.guild.me.hasPermission('MANAGE_ROLES')) getDefaultChannel(member.guild).send(sendEmbed(member, getDefaultChannel(member.guild), "Missing Permissions", "I don't have the required permissions to operate(MANAGE_ROLES)"));
             const channelz = member.guild.channels.cache.find(c => c.name === 'welcome');
             const embed = new Discord.MessageEmbed()
                 .setThumbnail(member.user.displayAvatarURL())
@@ -1172,7 +1172,7 @@ client.on('guildMemberAdd', member => {
     }
     if(client.data[id].logs === true) {
         if(member.guild.channels.cache.find(c => c.name === 'logs')) { 
-            if(!member.guild.me.hasPermission('ADMINISTRATOR')) getDefaultChannel(member.guild).send(sendEmbed(member, getDefaultChannel(member.guild), "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)"));
+            if(!member.guild.me.hasPermission('MANAGE_ROLES')) getDefaultChannel(member.guild).send(sendEmbed(member, getDefaultChannel(member.guild), "Missing Permissions", "I don't have the required permissions to operate(MANAGE_ROLES)"));
             const channelz = member.guild.channels.cache.find(c => c.name === 'logs');
             const embed = new Discord.MessageEmbed()
                 .setThumbnail(member.user.displayAvatarURL())
@@ -1186,7 +1186,7 @@ client.on('guildMemberAdd', member => {
     }
     if(client.data[id].defaultrole != 'false') {
         if(member.guild.roles.cache.find(r => r.name === client.data[id].defaultrole)) {
-            if(!member.guild.me.hasPermission('ADMINISTRATOR')) getDefaultChannel(member.guild).send(sendEmbed(member, getDefaultChannel(member.guild), "Missing Permissions", "I don't have the required permissions to operate(ADMINISTRATOR)"));
+            if(!member.guild.me.hasPermission('MANAGE_ROLES')) getDefaultChannel(member.guild).send(sendEmbed(member, getDefaultChannel(member.guild), "Missing Permissions", "I don't have the required permissions to operate(MANAGE_ROLES)"));
             member.roles.add(member.guild.roles.cache.find(r => r.name === client.data[id].defaultrole));
         } else {
             sendEmbed(member, getDefaultChannel(member.guild), "Default role", "**WARNING**: The default role is missing! Please use *prefix* or *reset* to manage it!");
